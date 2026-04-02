@@ -1,5 +1,5 @@
-// Week 03 — 기본 Spring MVC
-// GreetingController.java — 계층 분리 컨트롤러 (심화 실습)
+// Week 04 — IoC/DI
+// GreetingController.java — 인터페이스 기반 DI 컨트롤러
 package kr.ac.tukorea.swframework.controller;
 
 import kr.ac.tukorea.swframework.service.GreetingService;
@@ -9,20 +9,22 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 /**
- * 계층 분리 컨트롤러 (심화 실습)
- *
- * - Controller는 요청 접수와 View 반환만 담당한다
- * - 비즈니스 로직은 Service 계층에 위임한다
- * - 생성자 주입(DI)으로 GreetingService를 주입받는다
+ * 인터페이스 기반 DI 컨트롤러
+ * - GreetingService 인터페이스 타입으로 주입받는다 (구현체 타입 아님!)
+ * - 생성자 주입 + final 필드로 불변성을 보장한다
+ * - 구현체가 바뀌어도 이 코드는 한 줄도 수정할 필요 없다
  */
 @Controller
 public class GreetingController {
 
-    private final GreetingService greetingService; // 생성자 주입 (DI)
+    private final GreetingService greetingService; // 인터페이스 타입으로 선언
 
     /**
-     * 생성자 주입: Spring이 GreetingService 빈을 자동으로 주입한다.
-     * Spring Boot 3.x에서 생성자가 1개이면 @Autowired 생략 가능
+     * 생성자 주입: Spring이 GreetingService 구현체를 자동으로 주입한다.
+     * - @Primary가 붙은 구현체가 우선 주입됨
+     * - Spring Boot 3.x에서 생성자가 1개이면 @Autowired 생략 가능
+     *
+     * @param greetingService Spring이 주입하는 GreetingService 구현체
      */
     public GreetingController(GreetingService greetingService) {
         this.greetingService = greetingService;
@@ -30,8 +32,6 @@ public class GreetingController {
 
     /**
      * GET /greeting 요청 처리
-     * - @RequestParam으로 URL 파라미터를 받는다.
-     * - 예: /greeting?name=홍길동
      *
      * @param name URL 파라미터 (기본값: "학생")
      * @param model View에 전달할 데이터
@@ -41,7 +41,7 @@ public class GreetingController {
     public String greeting(
             @RequestParam(defaultValue = "학생") String name,
             Model model) {
-        String message = greetingService.getGreeting(name); // Service에 위임
+        String message = greetingService.greet(name); // 인터페이스 메서드 호출
         model.addAttribute("message", message);
         return "greeting";
     }

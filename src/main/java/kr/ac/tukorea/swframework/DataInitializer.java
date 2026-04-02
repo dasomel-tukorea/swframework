@@ -17,10 +17,12 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // 앱 시작 시 초기 데이터 삽입
-        studentRepository.save(new Student("홍길동", "IT경영"));
-        studentRepository.save(new Student("김영희", "컴퓨터공학"));
-        studentRepository.save(new Student("이철수", "정보통신"));
+        // 이미 데이터가 있으면 삽입하지 않음 (MySQL 재시작 시 중복 방지)
+        if (studentRepository.count() == 0) {
+            studentRepository.save(new Student("홍길동", "IT경영"));
+            studentRepository.save(new Student("김영희", "컴퓨터공학"));
+            studentRepository.save(new Student("이철수", "정보통신"));
+        }
 
         // 전체 조회 → 콘솔에 출력
         System.out.println("=== 초기 데이터 확인 ===");
