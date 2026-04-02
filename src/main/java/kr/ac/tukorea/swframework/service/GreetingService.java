@@ -1,25 +1,19 @@
-// Week 03 — 기본 Spring MVC
-// GreetingService.java — 인사 서비스 (Business Logic 계층)
+// Week 04 — IoC/DI
+// GreetingService.java — 인사 서비스 인터페이스
 package kr.ac.tukorea.swframework.service;
 
-import org.springframework.stereotype.Service;
-
 /**
- * 인사 서비스 — Business Logic 계층
- *
- * - Controller에서 직접 로직을 처리하지 않고, Service에 위임한다
- * - @Service는 @Component의 특수화 어노테이션이다
+ * 인사 서비스 인터페이스
+ * - 구현체를 교체해도 Controller 코드를 수정할 필요 없음
+ * - 인터페이스 타입으로 DI 받으면 결합도가 낮아진다
  */
-@Service
-public class GreetingService {
+public interface GreetingService {
 
     /**
-     * 사용자 이름을 받아 인사 메시지를 생성한다.
+     * 사용자 이름을 받아 인사 메시지를 반환한다.
      *
      * @param name 사용자 이름
      * @return 인사 메시지 문자열
      */
-    public String getGreeting(String name) {
-        return name + "님, SW프레임워크에 오신 것을 환영합니다!";
-    }
+    String greet(String name);
 }
