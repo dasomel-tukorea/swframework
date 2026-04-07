@@ -2,6 +2,7 @@
 // KoreanGreetingService.java — 한국어 인사 서비스 구현체
 package kr.ac.tukorea.swframework.service;
 
+import kr.ac.tukorea.swframework.annotation.LogExecutionTime;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +21,7 @@ public class KoreanGreetingService implements GreetingService {
      * @param name 사용자 이름
      * @return 한국어 인사 메시지
      */
+    @LogExecutionTime
     @Override
     public String greet(String name) {
         return name + "님, 안녕하세요! SW프레임워크에 오신 것을 환영합니다.";
