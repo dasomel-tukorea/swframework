@@ -7,6 +7,12 @@ server:
     encoding:
       charset: UTF-8        # 한글 파라미터 깨짐 방지
       force: true
+    session:
+      timeout: 30m          # 세션 타임아웃 (기본 30분)
+      cookie:
+        http-only: true      # JavaScript에서 쿠키 접근 차단 (XSS 방어)
+        # secure: true       # HTTPS에서만 쿠키 전송 (운영 환경에서 활성화)
+        same-site: lax       # 외부 도메인 요청 시 쿠키 전송 제어 (CSRF 방어)
 
 spring:
   profiles:

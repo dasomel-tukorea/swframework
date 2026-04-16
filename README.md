@@ -13,6 +13,9 @@ Spring Boot를 활용한 웹 애플리케이션 개발 실습 프로젝트입니
 | Database | H2 (In-Memory) / MySQL |
 | Data Access | Spring Data JDBC |
 | AOP | Spring AOP (`spring-boot-starter-aop`) |
+| Validation | `spring-boot-starter-validation` |
+| Security | `spring-security-crypto` (BCrypt) |
+| XSS 방어 | OWASP Java HTML Sanitizer, Servlet Filter |
 | Lombok | `@Slf4j` 등 |
 | Build Tool | Gradle |
 
@@ -34,12 +37,19 @@ src/main/java/kr/ac/tukorea/swframework/
 │   ├── HealthChecker.java             # Bean 생명주기 — 서버 준비 확인
 │   ├── SingletonBean.java             # Singleton 스코프 빈
 │   └── PrototypeBean.java             # Prototype 스코프 빈
+├── config/
+│   ├── WebConfig.java                 # 인터셉터 등록 (W07)
+│   └── XssEscapeFilterConfig.java     # XSS 서블릿 필터 (W06)
 ├── controller/
 │   ├── HelloController.java           # 기본 MVC 예제 (/hello)
 │   ├── GreetingController.java        # Service 계층 연동 (/greeting)
 │   ├── StudentApiController.java      # REST API (/api/students)
+│   ├── StudentController.java         # 학생 CRUD 웹 (W06)
+│   ├── LoginController.java           # 로그인/로그아웃 (W07)
 │   ├── ScopeTestController.java       # Singleton vs Prototype 비교 (/scope-test)
 │   └── AuditTestController.java       # 감사 AOP 테스트 (/audit)
+├── interceptor/
+│   └── LoginInterceptor.java          # 비로그인 접근 차단 (W07)
 ├── service/
 │   ├── GreetingService.java           # 인사 서비스 인터페이스
 │   ├── KoreanGreetingService.java     # 한국어 인사 구현체
@@ -48,9 +58,14 @@ src/main/java/kr/ac/tukorea/swframework/
 ├── domain/
 │   └── Student.java                   # 도메인 엔티티
 ├── dto/
-│   └── StudentResponse.java           # API 응답용 DTO
+│   ├── StudentResponse.java           # API 응답용 DTO
+│   ├── StudentForm.java               # 학생 폼 DTO + Validation (W06)
+│   └── LoginForm.java                 # 로그인 세션 DTO (W07)
+├── util/
+│   └── PasswordUtil.java              # BCrypt 암호화 유틸 (W07)
 └── repository/
-    └── StudentRepository.java         # 데이터 접근 계층
+    ├── StudentRepository.java         # 학생 데이터 접근 계층
+    └── UserRepository.java            # 메모리 기반 사용자 저장소 (W07)
 ```
 
 ## 실행 방법
@@ -81,6 +96,19 @@ cd swframework
 | `GET /scope-test` | Singleton vs Prototype 스코프 비교 |
 | `GET /audit/student?id=42` | 감사 AOP 테스트 — 학생 조회 |
 | `GET /audit/grade?id=42&subject=SW프레임워크&grade=95` | 감사 AOP 테스트 — 성적 기록 |
+| **6주차 — 학생 CRUD** | |
+| `GET /students` | 학생 목록 (로그인 필요) |
+| `GET /students/new` | 학생 등록 폼 |
+| `POST /students` | 학생 등록 처리 (PRG) |
+| `GET /students/{id}` | 학생 상세 조회 |
+| `GET /students/{id}/edit` | 학생 수정 폼 |
+| `POST /students/{id}/edit` | 학생 수정 처리 |
+| `POST /students/{id}/delete` | 학생 삭제 |
+| `GET /students/xss-test` | XSS 테스트 페이지 |
+| **7주차 — 로그인/세션** | |
+| `GET /login` | 로그인 폼 |
+| `POST /login` | 로그인 처리 (BCrypt 인증) |
+| `POST /logout` | 로그아웃 (세션 무효화) |
 | `http://localhost:8080/h2-console` | H2 DB 콘솔 (`jdbc:h2:mem:testdb`, `sa`) |
 
 ---
@@ -126,3 +154,22 @@ cd swframework
 - **커스텀 어노테이션 AOP**: `@LogExecutionTime` + `@annotation` Pointcut (`ExecutionTimeAspectV2`)
 - **보안 감사 AOP**: `AuditAspect`로 파라미터/결과 자동 감사 로깅
 - **Pointcut 표현식**: `execution` vs `within` vs `@annotation` 비교
+
+### 6주차 — View & Form 처리 (Thymeleaf CRUD)
+
+- **Thymeleaf CRUD**: 학생 등록/조회/수정/삭제 웹 화면 구현 (`StudentController`)
+- **PRG 패턴**: POST 처리 후 `redirect:`로 중복 전송 방지
+- **Bean Validation**: `@NotBlank`, `@Email`, `@Size` + `BindingResult` 에러 처리
+- **XSS 방어**: `th:text` 자동 이스케이프 vs `th:utext` 비교
+- **서블릿 필터 XSS**: `XssEscapeFilterConfig` — Decorator 패턴으로 요청 파라미터 이스케이프
+- **공통 레이아웃**: `th:fragment` + `th:replace`로 헤더/푸터 재사용 (`fragments/layout.html`)
+
+### 7주차 — 세션 처리 & 웹 보안 기초
+
+- **HttpSession 로그인/로그아웃**: `setAttribute` / `getAttribute` / `invalidate` 흐름
+- **HandlerInterceptor**: `LoginInterceptor`로 비로그인 사용자 접근 차단 공통화
+- **세션에 객체 저장**: `LoginForm` DTO (Serializable) — 이름, 권한 등 화면 활용
+- **BCrypt 비밀번호 암호화**: `PasswordUtil` + `UserRepository` — 평문 저장 금지
+- **로그인 실패 처리**: 실패 횟수 카운팅 → 5회 실패 시 계정 잠금 (5분)
+- **세션 보안 설정**: 타임아웃 30분, `HttpOnly` (XSS 방어), `SameSite=Lax` (CSRF 방어)
+- **테스트 계정**: `admin` / `1234` (관리자), `guest` / `1234` (게스트)

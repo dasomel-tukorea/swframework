@@ -1,21 +1,5 @@
-// [복사 위치] src/main/java/kr/ac/tukorea/swframework/config/XssEscapeFilterConfig.java
-// [작업] 파일이 없으면 생성 (config 패키지 없으면 함께 생성)
-//
-// ┌─────────────────────────────────────────────────────────────────┐
-// │  XSS Servlet Filter — 동작 원리 학습용 구현                      │
-// │                                                                 │
-// │  "서블릿 필터 레벨 XSS 방어" 가 어떻게 동작하는지 이해합니다.     │
-// │                                                                 │
-// │  (Spring Boot 3.x / Jakarta EE 환경에서 직접 구현한 버전)          │
-// └─────────────────────────────────────────────────────────────────┘
-//
-// 핵심 패턴: Decorator (HttpServletRequestWrapper)
-//   → 요청 파라미터를 꺼낼 때마다 HtmlUtils.htmlEscape() 를 자동 적용
-//   → Controller 가 값을 받는 시점에는 이미 이스케이프된 상태
-//
-// 적용 URL: /students/filter-test 만 (다른 URL에는 영향 없음)
-
-package kr.ac.tukorea.swframework.controller;
+// src/main/java/kr/ac/tukorea/swframework/config/XssEscapeFilterConfig.java
+package kr.ac.tukorea.swframework.config;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -65,7 +49,6 @@ public class XssEscapeFilterConfig {
         @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
                 throws IOException, ServletException {
-            // 원본 요청을 Wrapper 로 감싸서 전달
             chain.doFilter(new XssEscapeRequestWrapper((HttpServletRequest) request), response);
         }
     }
