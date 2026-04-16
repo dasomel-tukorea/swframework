@@ -1,0 +1,73 @@
+<!-- src/main/resources/templates/fragments/layout.html -->
+<!--
+    Week 06 Lab 06 — 공통 레이아웃 Fragment (심화)
+
+    Fragment 란?
+    - Thymeleaf에서 HTML 조각을 이름으로 정의하고 재사용하는 기능
+    - 헤더/푸터를 한 곳에서 관리 → 수정 시 전체 페이지에 자동 반영
+
+    사용법:
+      th:insert  — 현재 태그 안에 Fragment를 삽입 (감싸는 태그 유지)
+      th:replace — 현재 태그를 Fragment로 완전 교체 (감싸는 태그 제거)
+
+    다른 템플릿에서 참조하는 방법:
+      <header th:replace="~{fragments/layout :: header}"></header>
+      <footer th:replace="~{fragments/layout :: footer}"></footer>
+
+    ~{파일경로 :: 프래그먼트명} 형식:
+      파일경로: templates/ 기준 상대경로, 확장자 생략
+      프래그먼트명: th:fragment 속성값
+-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${pageTitle} ?: 'SW 프레임워크'">SW 프레임워크</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+
+<!--
+    공통 헤더 Fragment
+    th:fragment="header" — 이 태그를 "header"라는 이름의 Fragment로 정의
+-->
+<header th:fragment="header">
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <a th:href="@{/}">SW 프레임워크</a>
+        </div>
+        <div class="navbar-menu">
+            <a th:href="@{/students}">학생 관리</a>
+            <a th:href="@{/students/xss-test}">XSS 테스트</a>
+            <a th:href="@{/greeting}">인사</a>
+
+            <!--
+                7주차 로그인 실습 후 아래 코드가 동작합니다.
+                session.loginUser: LoginController에서 session.setAttribute("loginUser", loginForm) 으로 저장
+                loginForm 필드: loginId, name, role + isAdmin()
+
+                th:if / th:unless: 로그인 상태에 따라 조건부 렌더링
+            -->
+            <span th:if="${session.loginUser != null}">
+                <span th:text="${session.loginUser.name}">사용자</span>님
+                <span th:if="${session.loginUser.admin}" style="color:#e74c3c;">[관리자]</span>
+                <form th:action="@{/logout}" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn-sm">로그아웃</button>
+                </form>
+            </span>
+            <a th:unless="${session.loginUser != null}" th:href="@{/login}">로그인</a>
+        </div>
+    </nav>
+</header>
+
+<!--
+    공통 푸터 Fragment
+-->
+<footer th:fragment="footer">
+    <div class="footer-content">
+        <p>© 2026 한국공학대학교 IT경영전공 | SW 프레임워크 실습</p>
+    </div>
+</footer>
+
+</body>
+</html>
