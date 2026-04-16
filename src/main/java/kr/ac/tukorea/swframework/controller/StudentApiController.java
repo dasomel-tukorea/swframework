@@ -1,4 +1,5 @@
-// src/main/java/kr/ac/tukorea/swframework/controller/StudentApiController.java
+// [복사 위치] src/main/java/kr/ac/tukorea/swframework/controller/StudentApiController.java
+// [작업] 기존 파일을 이 파일로 교체 (getMajor → getStudentId/getEmail 반영)
 package kr.ac.tukorea.swframework.controller;
 
 import kr.ac.tukorea.swframework.domain.Student;
@@ -13,11 +14,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@RestController         // ← JSON 데이터를 반환하는 컨트롤러
-@RequestMapping("/api") // ← 공통 경로 접두어
+@RestController
+@RequestMapping("/api")
 public class StudentApiController {
 
-    private final StudentRepository studentRepository; // ← Repository 주입
+    private final StudentRepository studentRepository;
 
     public StudentApiController(StudentRepository studentRepository) {
         this.studentRepository = studentRepository;
@@ -33,19 +34,20 @@ public class StudentApiController {
         );
     }
 
-    // GET /api/students → DB에서 전체 학생 목록을 DTO로 반환
+    // GET /api/students → 전체 학생 목록 (DTO 변환)
+    // StudentResponse: major → studentId, email 필드로 변경됨 (lab01 참고)
     @GetMapping("/students")
     public List<StudentResponse> getStudents() {
         return studentRepository.findAll().stream()
-                .map(s -> new StudentResponse(s.getId(), s.getName(), s.getMajor()))
+                .map(s -> new StudentResponse(s.getId(), s.getName(), s.getStudentId(), s.getEmail()))
                 .collect(Collectors.toList());
     }
 
-    // GET /api/students/1 → DB에서 특정 학생 조회 후 DTO로 반환
+    // GET /api/students/1 → 특정 학생 조회
     @GetMapping("/students/{id}")
     public StudentResponse getStudent(@PathVariable Long id) {
         Student student = studentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("학생을 찾을 수 없습니다: " + id));
-        return new StudentResponse(student.getId(), student.getName(), student.getMajor());
+        return new StudentResponse(student.getId(), student.getName(), student.getStudentId(), student.getEmail());
     }
 }

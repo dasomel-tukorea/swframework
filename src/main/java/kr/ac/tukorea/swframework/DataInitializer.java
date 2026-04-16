@@ -19,9 +19,9 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) {
         // 이미 데이터가 있으면 삽입하지 않음 (MySQL 재시작 시 중복 방지)
         if (studentRepository.count() == 0) {
-            studentRepository.save(new Student("홍길동", "IT경영"));
-            studentRepository.save(new Student("김영희", "컴퓨터공학"));
-            studentRepository.save(new Student("이철수", "정보통신"));
+            studentRepository.save(new Student("홍길동", "202300001", "hong@tukorea.ac.kr"));
+            studentRepository.save(new Student("김영희", "202300002", "kim@tukorea.ac.kr"));
+            studentRepository.save(new Student("이철수", "202300003", "lee@tukorea.ac.kr"));
         }
 
         // 전체 조회 → 콘솔에 출력

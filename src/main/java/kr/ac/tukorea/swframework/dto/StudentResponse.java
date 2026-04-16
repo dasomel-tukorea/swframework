@@ -1,21 +1,26 @@
-// src/main/java/kr/ac/tukorea/swframework/dto/StudentResponse.java
+// [복사 위치] src/main/java/kr/ac/tukorea/swframework/dto/StudentResponse.java
+// [작업] 기존 파일을 이 파일로 교체 (major → studentId, email 추가)
 package kr.ac.tukorea.swframework.dto;
 
-// View에 보내는 데이터를 담는 객체 (DTO)
+/**
+ * REST API 응답용 DTO — Week 06 업데이트
+ * major → studentId, email 필드 추가
+ */
 public class StudentResponse {
     private Long id;
     private String name;
-    private String major;
+    private String studentId;
+    private String email;
 
-    // 생성자
-    public StudentResponse(Long id, String name, String major) {
+    public StudentResponse(Long id, String name, String studentId, String email) {
         this.id = id;
         this.name = name;
-        this.major = major;
+        this.studentId = studentId;
+        this.email = email;
     }
 
-    // Getter (JSON 변환 시 필수 — Jackson이 Getter를 사용하여 JSON 필드 생성)
     public Long getId() { return id; }
     public String getName() { return name; }
-    public String getMajor() { return major; }
+    public String getStudentId() { return studentId; }
+    public String getEmail() { return email; }
 }
