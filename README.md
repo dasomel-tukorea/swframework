@@ -113,6 +113,57 @@ cd swframework
 
 ---
 
+## 주차별 태그 — 소스 되돌리기 가이드
+
+각 주차의 **완료 상태**가 `weekNN` 태그로 표시되어 있습니다. 태그를 체크아웃하면 해당 주차까지의 실습 소스를 그대로 받을 수 있고, 이전 주차 태그(`week(N-1)`)로 이동하면 **N주차 시작 시점의 코드**가 준비됩니다.
+
+| 태그 | 상태 |
+|------|------|
+| `week01` | 1주차 — 실습 없음 (빈 저장소, 2주차 시작 이전) |
+| `week02` | 2주차 완료 — Spring Boot 초기 스켈레톤 (3주차 시작점) |
+| `week03` | 3주차 완료 — Spring Boot MVC/REST + Thymeleaf + Spring Data JDBC |
+| `week04` | 4주차 완료 — 인터페이스 기반 DI + Profile 분리 |
+| `week05` | 5주차 완료 — AOP + Bean Scope |
+| `week06` | 6주차 완료 — Thymeleaf CRUD + XSS 방어 |
+| `week07` | 7주차 완료 — 세션 로그인/인터셉터 + BCrypt + 계정 잠금 |
+
+### 사용법
+
+```bash
+# 원격 태그 가져오기 (clone 직후 1회 또는 최신화 시)
+git fetch --tags
+
+# N주차 완료 상태 확인 (예: 4주차)
+git checkout week04
+
+# N주차 시작 시점으로 이동 = (N-1)주차 태그 체크아웃
+# 예: 5주차 실습을 처음부터 시작하고 싶으면 week04 로 이동
+git checkout week04
+
+# 최신 master 브랜치로 복귀
+git checkout master
+```
+
+#### 실습 브랜치 만들기 (권장)
+
+`git checkout weekNN`은 detached HEAD 상태이므로, 본인 커밋을 남기려면 **먼저 브랜치**를 만드세요.
+
+```bash
+# week04 완료 시점부터 시작하는 나만의 5주차 실습 브랜치
+git checkout -b practice/week05 week04
+
+# 실습 진행 후 커밋
+git add .
+git commit -m "W05 lab01 진행"
+```
+
+#### 참고
+
+- 7주차 기준 `http/week06.http`, `http/week07.http`는 IntelliJ HTTP Client로 각 주차 엔드포인트를 수동 테스트하는 파일입니다.
+- 태그는 각 주차가 완성되었을 때의 **스냅샷**이므로, 이미 진행한 실습을 지우고 깨끗한 상태에서 다시 시작할 때 유용합니다.
+
+---
+
 ## 주차별 실습 내용
 
 ### 1주차 — SW 프레임워크 개론
