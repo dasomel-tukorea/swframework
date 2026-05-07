@@ -36,3 +36,8 @@ out/
 ### VS Code ###
 .vscode/
 /.claude/
+
+### AI generated files ###
+*.claude
+.bkit/
+.omc/
