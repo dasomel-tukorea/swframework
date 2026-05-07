@@ -1,8 +1,8 @@
--- schema-mysql.sql
--- MySQL용 테이블 정의 (mysql 프로파일에서 자동 실행)
-
 CREATE TABLE IF NOT EXISTS student (
-   id    BIGINT AUTO_INCREMENT PRIMARY KEY,
-   name  VARCHAR(100) NOT NULL,
-   major VARCHAR(100) NOT NULL
-);
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name       VARCHAR(100) NOT NULL,
+    student_id VARCHAR(20)  NOT NULL,
+    email      VARCHAR(200),
+    major      VARCHAR(100),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

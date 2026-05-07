@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  StudentMapper.xml — 학생 CRUD + Dynamic SQL
+  Week 09 — MyBatis 마이그레이션
+  namespace: 반드시 Mapper 인터페이스 FQCN과 일치해야 함
+-->
+<mapper namespace="kr.ac.tukorea.swframework.mapper.StudentMapper">
+
+    <!-- 공통 컬럼 목록 -->
+    <sql id="studentColumns">
+        id, name, student_id, email, major, created_at
+    </sql>
+
+    <!-- 전체 목록 조회 -->
+    <select id="findAll" resultType="Student">
+        SELECT <include refid="studentColumns"/>
+        FROM student
+        ORDER BY id DESC
+    </select>
+
+    <!-- ID로 단건 조회 -->
+    <select id="findById" parameterType="long" resultType="Student">
+        SELECT <include refid="studentColumns"/>
+        FROM student
+        WHERE id = #{id}
+    </select>
+
+    <!-- 학생 등록 (useGeneratedKeys로 PK 자동 채움) -->
+    <insert id="insert" parameterType="Student" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO student (name, student_id, email, major)
+        VALUES (#{name}, #{studentId}, #{email}, #{major})
+    </insert>
+
+    <!-- 전체 필드 수정 -->
+    <update id="update" parameterType="Student">
+        UPDATE student
+        SET name       = #{name},
+            student_id = #{studentId},
+            email      = #{email},
+            major      = #{major}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 삭제 -->
+    <delete id="delete" parameterType="long">
+        DELETE FROM student
+        WHERE id = #{id}
+    </delete>
+
+    <!-- 이름 검색 (<if> + <where>) -->
+    <select id="findByName" resultType="Student">
+        SELECT <include refid="studentColumns"/>
+        FROM student
+        <where>
+            <if test="name != null and name != ''">
+                name LIKE CONCAT('%', #{name}, '%')
+            </if>
+        </where>
+        ORDER BY id DESC
+    </select>
+
+    <!-- 검색 유형별 분기 (<choose>) -->
+    <select id="findBySearchType" resultType="Student">
+        SELECT <include refid="studentColumns"/>
+        FROM student
+        <where>
+            <choose>
+                <when test="searchType == 'name' and keyword != null and keyword != ''">
+                    name LIKE CONCAT('%', #{keyword}, '%')
+                </when>
+                <when test="searchType == 'email' and keyword != null and keyword != ''">
+                    email LIKE CONCAT('%', #{keyword}, '%')
+                </when>
+                <when test="searchType == 'student_id' and keyword != null and keyword != ''">
+                    student_id LIKE CONCAT('%', #{keyword}, '%')
+                </when>
+                <when test="searchType == 'major' and keyword != null and keyword != ''">
+                    major LIKE CONCAT('%', #{keyword}, '%')
+                </when>
+                <otherwise>
+                    <!-- keyword 없거나 알 수 없는 type → 전체 조회 -->
+                </otherwise>
+            </choose>
+        </where>
+        ORDER BY id DESC
+    </select>
+
+    <!-- 선택적 UPDATE (<set> + <if>) -->
+    <update id="updateSelective" parameterType="Student">
+        UPDATE student
+        <set>
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="studentId != null and studentId != ''">student_id = #{studentId},</if>
+            <if test="email != null and email != ''">email = #{email},</if>
+            <if test="major != null and major != ''">major = #{major},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 여러 ID로 한 번에 조회 (<foreach> IN 절) -->
+    <select id="findByIds" resultType="Student">
+        SELECT <include refid="studentColumns"/>
+        FROM student
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" close=")" separator=",">
+            #{id}
+        </foreach>
+        ORDER BY id DESC
+    </select>
+
+    <!-- 배치 INSERT (<foreach>) -->
+    <insert id="insertBatch" parameterType="list">
+        INSERT INTO student (name, student_id, email, major)
+        VALUES
+        <foreach collection="list" item="s" separator=",">
+            (#{s.name}, #{s.studentId}, #{s.email}, #{s.major})
+        </foreach>
+    </insert>
+
+    <!-- 이름/전공 동적 AND 조건 (<trim>) -->
+    <select id="findByCondition" resultType="Student">
+        SELECT <include refid="studentColumns"/>
+        FROM student
+        <trim prefix="WHERE" prefixOverrides="AND |OR ">
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="major != null and major != ''">
+                AND major = #{major}
+            </if>
+        </trim>
+        ORDER BY id DESC
+    </select>
+
+</mapper>

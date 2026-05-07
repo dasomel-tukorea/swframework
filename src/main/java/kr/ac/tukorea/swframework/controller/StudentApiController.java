@@ -4,7 +4,7 @@ package kr.ac.tukorea.swframework.controller;
 
 import kr.ac.tukorea.swframework.domain.Student;
 import kr.ac.tukorea.swframework.dto.StudentResponse;
-import kr.ac.tukorea.swframework.repository.StudentRepository;
+import kr.ac.tukorea.swframework.service.StudentService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,10 +18,10 @@ import java.util.stream.Collectors;
 @RequestMapping("/api")
 public class StudentApiController {
 
-    private final StudentRepository studentRepository;
+    private final StudentService studentService;
 
-    public StudentApiController(StudentRepository studentRepository) {
-        this.studentRepository = studentRepository;
+    public StudentApiController(StudentService studentService) {
+        this.studentService = studentService;
     }
 
     // GET /api/hello → JSON 응답
@@ -35,19 +35,18 @@ public class StudentApiController {
     }
 
     // GET /api/students → 전체 학생 목록 (DTO 변환)
-    // StudentResponse: major → studentId, email 필드로 변경됨 (lab01 참고)
     @GetMapping("/students")
     public List<StudentResponse> getStudents() {
-        return studentRepository.findAll().stream()
+        return studentService.findAll().stream()
                 .map(s -> new StudentResponse(s.getId(), s.getName(), s.getStudentId(), s.getEmail()))
                 .collect(Collectors.toList());
     }
 
-    // GET /api/students/1 → 특정 학생 조회
+    // GET /api/students/{id} → 특정 학생 조회
     @GetMapping("/students/{id}")
     public StudentResponse getStudent(@PathVariable Long id) {
-        Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("학생을 찾을 수 없습니다: " + id));
+        Student student = studentService.findById(id);
+        if (student == null) throw new RuntimeException("학생을 찾을 수 없습니다: " + id);
         return new StudentResponse(student.getId(), student.getName(), student.getStudentId(), student.getEmail());
     }
 }

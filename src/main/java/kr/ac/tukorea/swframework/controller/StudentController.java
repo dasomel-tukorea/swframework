@@ -5,7 +5,7 @@ package kr.ac.tukorea.swframework.controller;
 import jakarta.validation.Valid;
 import kr.ac.tukorea.swframework.domain.Student;
 import kr.ac.tukorea.swframework.dto.StudentForm;
-import kr.ac.tukorea.swframework.repository.StudentRepository;
+import kr.ac.tukorea.swframework.service.StudentService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -16,9 +16,9 @@ import org.owasp.html.Sanitizers;
 import org.springframework.web.util.HtmlUtils;
 
 /**
- * 학생 MVC 컨트롤러 — Lab 05
+ * 학생 MVC 컨트롤러 — Week 09 (MyBatis 마이그레이션)
  *
- * Lab 04 대비 추가:
+ * StudentRepository 제거, StudentService 주입으로 교체.
  *   GET  /students/xss-test  → XSS 비교 폼 (th:utext / th:text / 수동 이스케이프)
  *   POST /students/xss-test  → XSS 비교 처리
  *   GET  /students/filter-test → XSS Servlet Filter 필터 데모 폼
@@ -28,21 +28,21 @@ import org.springframework.web.util.HtmlUtils;
 @RequestMapping("/students")
 public class StudentController {
 
-    private final StudentRepository studentRepository;
+    private final StudentService studentService;
 
-    public StudentController(StudentRepository studentRepository) {
-        this.studentRepository = studentRepository;
+    public StudentController(StudentService studentService) {
+        this.studentService = studentService;
     }
 
-    // ── Lab 01: 목록 ──────────────────────────────────────────────
+    // ── 목록 ──────────────────────────────────────────────
 
     @GetMapping
     public String list(Model model) {
-        model.addAttribute("students", studentRepository.findAll());
+        model.addAttribute("students", studentService.findAll());
         return "student/list";
     }
 
-    // ── Lab 02~03: 등록 폼 + PRG ──────────────────────────────────
+    // ── 등록 폼 + PRG ──────────────────────────────────
 
     @GetMapping("/new")
     public String addForm(Model model) {
@@ -61,27 +61,27 @@ public class StudentController {
         }
 
         Student student = new Student(form.getName(), form.getStudentId(), form.getEmail());
-        Student saved = studentRepository.save(student);
+        studentService.save(student);
 
-        redirectAttributes.addAttribute("id", saved.getId());
+        redirectAttributes.addAttribute("id", student.getId());
         redirectAttributes.addFlashAttribute("status", true);
         return "redirect:/students/{id}";
     }
 
-    // ── Lab 04: 상세 / 수정 / 삭제 ───────────────────────────────
+    // ── 상세 / 수정 / 삭제 ───────────────────────────────
 
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model) {
-        Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 학생 ID: " + id));
+        Student student = studentService.findById(id);
+        if (student == null) throw new IllegalArgumentException("존재하지 않는 학생 ID: " + id);
         model.addAttribute("student", student);
         return "student/detail";
     }
 
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id, Model model) {
-        Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 학생 ID: " + id));
+        Student student = studentService.findById(id);
+        if (student == null) throw new IllegalArgumentException("존재하지 않는 학생 ID: " + id);
 
         StudentForm form = new StudentForm();
         form.setName(student.getName());
@@ -105,19 +105,19 @@ public class StudentController {
             return "student/editForm";
         }
 
-        Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 학생 ID: " + id));
+        Student student = studentService.findById(id);
+        if (student == null) throw new IllegalArgumentException("존재하지 않는 학생 ID: " + id);
         student.setName(form.getName());
         student.setStudentId(form.getStudentId());
         student.setEmail(form.getEmail());
-        studentRepository.save(student);
+        studentService.save(student);
 
         return "redirect:/students/{id}";
     }
 
     @PostMapping("/{id}/delete")
     public String deleteStudent(@PathVariable Long id) {
-        studentRepository.deleteById(id);
+        studentService.delete(id);
         return "redirect:/students";
     }
 

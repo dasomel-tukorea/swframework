@@ -9,6 +9,7 @@ server:
       force: true
     session:
       timeout: 30m          # 세션 타임아웃 (기본 30분)
+      tracking-modes: cookie # URL 재작성(;jsessionid=) 비활성 — 보안 + 깔끔한 Location 헤더
       cookie:
         http-only: true      # JavaScript에서 쿠키 접근 차단 (XSS 방어)
         # secure: true       # HTTPS에서만 쿠키 전송 (운영 환경에서 활성화)
@@ -17,6 +18,13 @@ server:
 spring:
   profiles:
     active: h2              # 기본 프로파일: H2 (개발 시 편리, MySQL 없어도 실행 가능)
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: kr.ac.tukorea.swframework.domain
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 # 로그 레벨 설정
 logging:

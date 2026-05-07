@@ -10,8 +10,8 @@ Spring Boot를 활용한 웹 애플리케이션 개발 실습 프로젝트입니
 | Framework | Spring Boot 3.5.x |
 | Java | 21 |
 | Template Engine | Thymeleaf |
-| Database | H2 (In-Memory) / MySQL |
-| Data Access | Spring Data JDBC |
+| Database | H2 (In-Memory) / MySQL 8.x |
+| Data Access | **MyBatis 3.0.3** (W09부터, W08까지는 Spring Data JDBC) |
 | AOP | Spring AOP (`spring-boot-starter-aop`) |
 | Validation | `spring-boot-starter-validation` |
 | Security | `spring-security-crypto` (BCrypt) |
@@ -43,8 +43,9 @@ src/main/java/kr/ac/tukorea/swframework/
 ├── controller/
 │   ├── HelloController.java           # 기본 MVC 예제 (/hello)
 │   ├── GreetingController.java        # Service 계층 연동 (/greeting)
-│   ├── StudentApiController.java      # REST API (/api/students)
-│   ├── StudentController.java         # 학생 CRUD 웹 (W06)
+│   ├── StudentApiController.java      # REST API (/api/students) — W09 Service 의존
+│   ├── StudentController.java         # 학생 CRUD 웹 — W09 Service 의존
+│   ├── SearchController.java          # 동적 SQL 검색 — `/students/search`, `/by-ids` (W09)
 │   ├── LoginController.java           # 로그인/로그아웃 (W07)
 │   ├── ScopeTestController.java       # Singleton vs Prototype 비교 (/scope-test)
 │   └── AuditTestController.java       # 감사 AOP 테스트 (/audit)
@@ -54,18 +55,31 @@ src/main/java/kr/ac/tukorea/swframework/
 │   ├── GreetingService.java           # 인사 서비스 인터페이스
 │   ├── KoreanGreetingService.java     # 한국어 인사 구현체
 │   ├── EnglishGreetingService.java    # 영어 인사 구현체 (@Primary)
+│   ├── StudentService.java            # 학생 비즈니스 서비스 (@Transactional, W09)
 │   └── StudentInfoService.java        # 학생 정보 서비스 (감사 AOP 대상)
 ├── domain/
-│   └── Student.java                   # 도메인 엔티티
+│   └── Student.java                   # 도메인 엔티티 (POJO, W09부터 어노테이션 제거)
 ├── dto/
 │   ├── StudentResponse.java           # API 응답용 DTO
 │   ├── StudentForm.java               # 학생 폼 DTO + Validation (W06)
 │   └── LoginForm.java                 # 로그인 세션 DTO (W07)
 ├── util/
 │   └── PasswordUtil.java              # BCrypt 암호화 유틸 (W07)
+├── mapper/
+│   └── StudentMapper.java             # MyBatis Mapper 인터페이스 (W09)
 └── repository/
-    ├── StudentRepository.java         # 학생 데이터 접근 계층
     └── UserRepository.java            # 메모리 기반 사용자 저장소 (W07)
+
+src/main/resources/
+├── application.yaml                   # 공통 설정 (서버/세션/MyBatis)
+├── application-h2.yml                 # H2 인메모리 프로파일
+├── application-mysql.yml              # MySQL 프로파일
+├── schema.sql                         # H2 스키마 (자동 실행)
+├── schema-mysql.sql                   # MySQL 스키마 (mysql 프로파일에서 자동 실행)
+├── mapper/
+│   └── StudentMapper.xml              # MyBatis SQL 정의 (CRUD + Dynamic SQL 5종)
+├── templates/                         # Thymeleaf 뷰
+└── static/                            # 정적 리소스 (CSS 등)
 ```
 
 ## 실행 방법
@@ -74,15 +88,76 @@ src/main/java/kr/ac/tukorea/swframework/
 # 프로젝트 클론
 git clone https://github.com/dasomel-tukorea/swframework.git
 cd swframework
+```
 
-# H2 프로파일 (기본)
+### 옵션 A — H2 인메모리 프로필 (가장 빠른 시작)
+
+별도 DB 설치 없이 즉시 실행됩니다. 앱 종료 시 데이터는 휘발됩니다.
+
+```bash
+# 기본 프로파일이 h2이므로 옵션 없이도 동일
 ./gradlew bootRun
+# 또는 명시적으로
+./gradlew bootRun --args='--spring.profiles.active=h2'
+```
 
-# MySQL 프로파일
+- 접속: <http://localhost:8080>
+- H2 콘솔: <http://localhost:8080/h2-console>
+  - JDBC URL: `jdbc:h2:mem:testdb`, User: `sa`, Password: 비움
+  - W07 LoginInterceptor가 활성이므로 `admin/1234`로 먼저 로그인 후 접속하세요.
+- DataInitializer가 매 실행마다 학생 3건(홍길동/김영희/이철수)을 시드합니다.
+
+### 옵션 B — MySQL 프로필 (운영형 환경)
+
+#### 1. MySQL 8.x 준비 (Docker 예시)
+
+```bash
+docker run -d --name mysql -p 3306:3306 \
+  -e MYSQL_ROOT_PASSWORD=root \
+  mysql:8.4.8
+```
+
+#### 2. 데이터베이스 + 사용자 생성
+
+`application-mysql.yml`은 기본적으로 `root/1234`로 접속합니다. 컨테이너 root 비밀번호와 다르면 사용자를 별도 생성합니다.
+
+```bash
+docker exec -it mysql mysql -uroot -proot <<'SQL'
+CREATE DATABASE IF NOT EXISTS swframework
+  DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+
+-- 외부 호스트에서 접속할 root@'%' 계정 (비번 1234 — yml과 일치)
+CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED WITH caching_sha2_password BY '1234';
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+SQL
+```
+
+> 비밀번호를 변경하려면 `application-mysql.yml`의 `password:` 또는 환경변수 `SPRING_DATASOURCE_PASSWORD`로 오버라이드합니다.
+
+#### 3. 앱 실행
+
+```bash
 ./gradlew bootRun --args='--spring.profiles.active=mysql'
 ```
 
-브라우저에서 http://localhost:8080 으로 접속합니다.
+- 부팅 시 `schema-mysql.sql`이 자동 실행되어 `student` 테이블이 생성됩니다(있으면 스킵).
+- 컨테이너 볼륨에 데이터가 영속되므로 DataInitializer 시드는 첫 실행 1회만 수행됩니다.
+
+#### 4. 환경변수로 설정 오버라이드 (선택)
+
+```bash
+SPRING_DATASOURCE_PASSWORD=mySecret \
+SPRING_DATASOURCE_URL='jdbc:mysql://127.0.0.1:3306/swframework?sslMode=DISABLED&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8' \
+./gradlew bootRun --args='--spring.profiles.active=mysql'
+```
+
+### HTTP 테스트 — `http/week09.http`
+
+IntelliJ HTTP Client로 `http/week09.http` 파일을 위에서부터 실행하세요.
+- `[Login]`이 가장 먼저 실행되어 세션 쿠키를 획득합니다.
+- 각 POST 앞 `# @no-redirect` 디렉티브로 302 응답을 직접 검증합니다.
+- `[Lab01-3]`이 새 학생 ID를 캡처해 `[Lab01-5]`에서 `{{newStudentId}}`로 동적으로 사용합니다.
 
 ## 주요 엔드포인트
 
@@ -109,7 +184,11 @@ cd swframework
 | `GET /login` | 로그인 폼 |
 | `POST /login` | 로그인 처리 (BCrypt 인증) |
 | `POST /logout` | 로그아웃 (세션 무효화) |
-| `http://localhost:8080/h2-console` | H2 DB 콘솔 (`jdbc:h2:mem:testdb`, `sa`) |
+| **9주차 — MyBatis 동적 SQL** | |
+| `GET /students/search?type=name&keyword=홍` | 검색 유형 분기 (`<choose>`) |
+| `GET /students/search?type=email&keyword=tukorea` | 이메일 검색 |
+| `GET /students/by-ids?ids=1,2,3` | 다건 조회 (`<foreach>` IN 절) |
+| `http://localhost:8080/h2-console` | H2 DB 콘솔 (h2 프로파일 전용) |
 
 ---
 
@@ -126,6 +205,7 @@ cd swframework
 | `week05` | 5주차 완료 — AOP + Bean Scope |
 | `week06` | 6주차 완료 — Thymeleaf CRUD + XSS 방어 |
 | `week07` | 7주차 완료 — 세션 로그인/인터셉터 + BCrypt + 계정 잠금 |
+| `week09` | 9주차 완료 — Spring Data JDBC → MyBatis 마이그레이션 + 동적 SQL |
 
 ### 사용법
 
@@ -222,5 +302,39 @@ git commit -m "W05 lab01 진행"
 - **세션에 객체 저장**: `LoginForm` DTO (Serializable) — 이름, 권한 등 화면 활용
 - **BCrypt 비밀번호 암호화**: `PasswordUtil` + `UserRepository` — 평문 저장 금지
 - **로그인 실패 처리**: 실패 횟수 카운팅 → 5회 실패 시 계정 잠금 (5분)
-- **세션 보안 설정**: 타임아웃 30분, `HttpOnly` (XSS 방어), `SameSite=Lax` (CSRF 방어)
+- **세션 보안 설정**: 타임아웃 30분, `HttpOnly` (XSS 방어), `SameSite=Lax` (CSRF 방어), `tracking-modes=cookie` (URL 재작성 비활성)
 - **테스트 계정**: `admin` / `1234` (관리자), `guest` / `1234` (게스트)
+
+### 9주차 — Java DB 프로그래밍 & MyBatis
+
+> "JDBC 반복 코드 → SQL Mapper" — W06~W07까지 사용한 Spring Data JDBC를 MyBatis로 전환하고 동적 SQL 5종을 적용한다.
+
+**핵심 변경 (Lab 02 마이그레이션)**
+
+| 항목 | Before (W06 / Spring Data JDBC) | After (W09 / MyBatis) |
+|---|---|---|
+| 의존성 | `spring-boot-starter-data-jdbc` | `mybatis-spring-boot-starter:3.0.3` |
+| 도메인 | `@Table("student")` `@Id` | 순수 POJO + 기본 생성자 |
+| 데이터 접근 | `interface ... extends ListCrudRepository` | `@Mapper interface StudentMapper` |
+| SQL | 자동 생성 | `resources/mapper/StudentMapper.xml` |
+| `save(s)` 분기 | id 유무로 자동 INSERT/UPDATE | Service에서 `insert`/`update` 명시 |
+| 컬럼 매핑 | 자동 (camelCase ↔ snake_case) | `mybatis.configuration.map-underscore-to-camel-case=true` |
+| 트랜잭션 | `@Transactional` (그대로) | `@Transactional` (그대로) |
+
+**Lab 03 — Dynamic SQL 5종 (`StudentMapper.xml`)**
+
+- `<if>` + `<where>` — 조건이 단 하나일 때 (`findByName`)
+- `<choose>` / `<when>` / `<otherwise>` — N개 분기 중 택1 (`findBySearchType`)
+- `<set>` + `<if>` — 부분 컬럼 UPDATE (`updateSelective`)
+- `<foreach>` — IN 절 / 배치 INSERT (`findByIds`, `insertBatch`)
+- `<trim>` — 커스텀 접두사/접미사 (`findByCondition`)
+
+**확인 포인트**
+
+- [x] `Controller → Service → Mapper` 5계층 동작
+- [x] PRG 패턴 — `redirect:/students/{id}` (`useGeneratedKeys`로 자동 채워진 PK 사용)
+- [x] `mybatis.configuration.log-impl` 콘솔 로그로 동적으로 조립된 WHERE/SET 절 확인
+- [x] H2 ↔ MySQL 프로파일 전환 시 코드 변경 없음 (W04 DI + W05 AOP의 보너스)
+- [x] `http/week09.http` 27개 단정 모두 통과 (h2/mysql 양쪽)
+
+**테스트 계정 (W07 그대로)**: `admin` / `1234`, `guest` / `1234`
