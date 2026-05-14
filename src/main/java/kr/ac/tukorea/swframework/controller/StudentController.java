@@ -5,6 +5,7 @@ package kr.ac.tukorea.swframework.controller;
 import jakarta.validation.Valid;
 import kr.ac.tukorea.swframework.domain.Student;
 import kr.ac.tukorea.swframework.dto.StudentForm;
+import kr.ac.tukorea.swframework.exception.EntityNotFoundException;
 import kr.ac.tukorea.swframework.service.StudentService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -73,7 +74,7 @@ public class StudentController {
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model) {
         Student student = studentService.findById(id);
-        if (student == null) throw new IllegalArgumentException("존재하지 않는 학생 ID: " + id);
+        if (student == null) throw new EntityNotFoundException(id + "번 학생을 찾을 수 없습니다.");
         model.addAttribute("student", student);
         return "student/detail";
     }
@@ -81,7 +82,7 @@ public class StudentController {
     @GetMapping("/{id}/edit")
     public String editForm(@PathVariable Long id, Model model) {
         Student student = studentService.findById(id);
-        if (student == null) throw new IllegalArgumentException("존재하지 않는 학생 ID: " + id);
+        if (student == null) throw new EntityNotFoundException(id + "번 학생을 찾을 수 없습니다.");
 
         StudentForm form = new StudentForm();
         form.setName(student.getName());
@@ -106,7 +107,7 @@ public class StudentController {
         }
 
         Student student = studentService.findById(id);
-        if (student == null) throw new IllegalArgumentException("존재하지 않는 학생 ID: " + id);
+        if (student == null) throw new EntityNotFoundException(id + "번 학생을 찾을 수 없습니다.");
         student.setName(form.getName());
         student.setStudentId(form.getStudentId());
         student.setEmail(form.getEmail());
